@@ -68,3 +68,4 @@ Admin: `/api/admin/players`, `/api/admin/items`, `/api/admin/achievements`, `/ap
 
 Use Neon pooled `DATABASE_URL` with `pgbouncer=true` for runtime queries and `DIRECT_URL` for Prisma migrations. Set a long random `JWT_SECRET`. Deploy with `npm run build`, then `npm run db:migrate` against Neon.
 # subway-fadya
+# subway-fadya
