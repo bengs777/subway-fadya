@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  PLAYER
+}
+
+enum ItemType {
+  SKIN
+  POWERUP
+  BOARD
+}
+
+enum PowerUpType {
+  COIN_MAGNET
+  SHIELD
+  DOUBLE_SCORE
+  SPEED_BOOST
+}
+
+model User {
+  id           String        @id @default(cuid())
+  username     String        @unique
+  email        String        @unique
+  password     String
+  role         Role          @default(PLAYER)
+  avatarUrl    String?
+  coins        Int           @default(0)
+  highscore    Int           @default(0)
+  refreshHash  String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  scores       Score[]
+  inventory    Inventory[]
+  sessions     GameSession[]
+  achievements UserAchievement[]
+  progress     UserProgress?
+
+  @@index([role])
+  @@index([highscore(sort: Desc)])
+}
+
+model Level {
+  id               String   @id @default(cuid())
+  levelNumber      Int      @unique
+  name             String
+  description      String
+  requiredDistance Int
+  speedMultiplier  Float
+  rewardCoins      Int
+  environmentType  String
+  unlockRequirement Int
+  createdAt        DateTime @default(now())
+
+  @@index([levelNumber])
+}
+
+model UserProgress {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  currentLevel   Int      @default(1)
+  completedLevel Int      @default(0)
+  totalStars     Int      @default(0)
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Score {
+  id        String   @id @default(cuid())
+  userId    String
+  score     Int
+  distance  Int
+  coins     Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([score(sort: Desc)])
+  @@index([userId, createdAt])
+}
+
+model Achievement {
+  id          String            @id @default(cuid())
+  title       String            @unique
+  description String
+  target      Int               @default(1)
+  metric      String            @default("games")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  users       UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+}
+
+model Inventory {
+  id        String   @id @default(cuid())
+  userId    String
+  itemId    String
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+}
+
+model Item {
+  id          String        @id @default(cuid())
+  name        String
+  type        ItemType
+  imageUrl    String
+  price       Int
+  powerUpType PowerUpType?
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  inventory   Inventory[]
+
+  @@index([type])
+}
+
+model GameSession {
+  id         String    @id @default(cuid())
+  userId     String
+  startTime  DateTime  @default(now())
+  endTime    DateTime?
+  finalScore Int?
+  distance   Int       @default(0)
+  coins      Int       @default(0)
+  seed       String
+  checksum   String
+  valid      Boolean   @default(true)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startTime])
+}
